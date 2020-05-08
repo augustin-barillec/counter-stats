@@ -9,7 +9,9 @@ def upload_pretty_logs(gpl, pretty_logs_df):
         source='dataframe',
         destination='bq',
         data_name='pretty_logs',
-        dataframe=pretty_logs_df)
+        dataframe=pretty_logs_df,
+        timestamp_cols=['ts'],
+        date_cols=['d'])
 
 
 def build_cols_to_upload():
@@ -29,7 +31,9 @@ def upload_dfs(gpl, dfs):
             source='dataframe',
             destination='bq',
             data_name=data_names[kind],
-            dataframe=dfs[kind][cols_to_upload[kind]])
+            dataframe=dfs[kind][cols_to_upload[kind]],
+            timestamp_cols=['ts'],
+            date_cols=['d'])
         for kind in kinds]
 
     gpl.mload(configs)
