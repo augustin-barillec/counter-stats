@@ -235,7 +235,7 @@ def compute_kd_stats(gpl):
     h_suicides as (
     select * from `{project_id}.{dataset_name}.h_suicides`),
 
- kills as (
+    kills as (
     select 
     rn, ts, d, map, map_number, round_number, competition,
     killer_name as player_name,
@@ -290,7 +290,7 @@ def attribute_teams(gpl):
     killer_name, 
     countif(killer_team='CT') as kills_as_ct, 
     countif(killer_team='T') as kills_as_t
-    from hh_kills where not tk
+    from hh_kills
     group by killer_name, map_number),
 
     nb_of_killed as (select 
@@ -298,7 +298,7 @@ def attribute_teams(gpl):
     killed_name, 
     countif(killed_team='CT') as killed_as_ct, 
     countif(killed_team='T') as killed_as_t
-    from hh_kills where not tk
+    from hh_kills
     group by killed_name, map_number),
 
     stats as (select
@@ -359,3 +359,78 @@ def compute_vd_stats(gpl):
     """
     query = format_query(query_template)
     query_to_bq(gpl, query, 'vd_stats')
+
+
+def compute_sequences(gpl):
+    query_template = """
+    with
+    hh_kills as (select * from `{project_id}.{dataset_name}.hh_kills`),
+    hh_no_team_kills as (select rn, map_number, killer_name, killed_name 
+    from hh_kills where not tk),
+    
+    kills as (select killer_name as player_name, rn, map_number, 1 as type 
+    from hh_no_team_kills),
+    killed as (select killed_name as player_name, rn, map_number, -1 as type 
+    from hh_no_team_kills),
+    
+    events as (select * from kills union all select * from killed),
+    
+    events_1 as (select *,
+    type - lag(type) over(partition by player_name, map_number order by rn) 
+    as step
+    from events),
+    
+    events_2 as (select *, 
+    countif(abs(step) > 1) 
+    over (partition by player_name, map_number order by rn) as nb_of_breaks
+    from events_1),
+    
+    sequences as (
+    select player_name, map_number, nb_of_breaks, type, count(*) as length 
+    from events_2 
+    group by player_name, map_number, nb_of_breaks, type
+    having length >= 3),
+    
+    sequences_1 as (
+    select
+    player_name,
+    map_number,
+    type,
+    length,
+    count(*) as nb_of_sequences
+    from sequences
+    group by player_name, map_number, type, length),
+    
+    kill_sequences as (
+    select * from sequences_1 where type = 1), 
+    
+    killed_sequences as (
+    select * from sequences_1 where type = -1),
+    
+    sequences_2 as (
+    select 
+    player_name, 
+    map_number, 
+    length,
+    ifnull(kill_sequences.nb_of_sequences, 0) as kill_sequences,
+    ifnull(killed_sequences.nb_of_sequences, 0) as killed_sequences
+    from kill_sequences full outer join killed_sequences
+    using (player_name, map_number, length))
+    
+    select * from sequences_2
+    """
+    query = format_query(query_template)
+    query_to_bq(gpl, query, 'sequences')
+
+
+def add_map_infos_to_sequences(gpl):
+    query_template = """
+    with
+    sequences as (select * 
+    from `{project_id}.{dataset_name}.sequences`),
+    maps as (select * from `{project_id}.{dataset_name}.maps`)
+    
+    select * from sequences inner join maps using(map_number)
+    """
+    query = format_query(query_template)
+    query_to_bq(gpl, query, 'sequences')
