@@ -47,6 +47,7 @@ def is_to_keep_log(log):
 def pile_up(folder_path):
     logs = []
 
+    previous_sub_folder_basename = None
     previous_max_timestamp = None
     for sub_folder_basename in sorted(os.listdir(folder_path)):
         sub_folder_path = os.path.join(folder_path, sub_folder_basename)
@@ -59,12 +60,27 @@ def pile_up(folder_path):
 
         kept_logs = [log for log in sub_logs if is_to_keep_log(log)]
 
+        timestamps = [log_to_timestamp(log) for log in kept_logs]
+        max_timestamp = max(timestamps)
+
         if previous_max_timestamp is not None:
+            if not(previous_max_timestamp < max_timestamp):
+                msg = (
+                    'Previous sub_folder_basename = {}. '
+                    'Current sub_folder_basename = {}.\n'
+                    'Previous max_timestamp = {} >= '
+                    'Current max_timestamp = {}.\n'
+                    'This is not supported.'
+                ).format(
+                    previous_sub_folder_basename,
+                    sub_folder_basename,
+                    previous_max_timestamp,
+                    max_timestamp)
+                raise ValueError(msg)
             kept_logs = [log for log in kept_logs if
                          log_to_timestamp(log) > previous_max_timestamp]
 
-        timestamps = [log_to_timestamp(log) for log in kept_logs]
-        max_timestamp = max(timestamps)
+        previous_sub_folder_basename = sub_folder_basename
         previous_max_timestamp = max_timestamp
 
         logs += sorted(kept_logs, key=lambda x: log_to_timestamp(x))

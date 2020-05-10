@@ -8,7 +8,7 @@ def upload_pretty_logs(gpl, pretty_logs_df):
     gpl.load(
         source='dataframe',
         destination='bq',
-        data_name='pretty_logs',
+        data_name='raw_pretty_logs',
         dataframe=pretty_logs_df,
         timestamp_cols=['ts'],
         date_cols=['d'])

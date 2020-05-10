@@ -93,9 +93,18 @@ def prettify(dfs):
             axis=1)
 
     to_concat = []
+    cols = [
+        'rn',
+        'ts',
+        'd',
+        'map',
+        'map_number',
+        'round_number',
+        'kind',
+        'pretty_log'
+    ]
+
     for kind in kinds:
-        to_concat.append(pretty_logs[kind][
-                             ['rn', 'ts', 'd', 'map', 'map_number', 'kind',
-                              'pretty_log']])
+        to_concat.append(pretty_logs[kind][cols])
     pretty_logs_df = pandas.concat(to_concat)
     return pretty_logs_df

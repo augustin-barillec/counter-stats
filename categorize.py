@@ -57,18 +57,24 @@ def categorize(logs):
         raw_data[kind] = []
 
     current_map = None
-    map_number = 0
-    for i, log in enumerate(logs):
+    current_map_number = 0
+    current_round_number = 0
+    for i, log in enumerate(logs, 1):
         row = {'rn': i, 'log': log}
 
         is_log_added = False
         for kind in kinds:
+
             if globals()['is_{}_log'.format(kind)](log):
                 if kind == 'map_change':
                     current_map = log_to_map(log)
-                    map_number += 1
+                    current_map_number += 1
+                    current_round_number = 0
+                if kind == 'round_start':
+                    current_round_number += 1
                 row['map'] = current_map
-                row['map_number'] = map_number
+                row['map_number'] = current_map_number
+                row['round_number'] = current_round_number
                 row['kind'] = kind
                 raw_data[kind].append(row)
                 is_log_added = True

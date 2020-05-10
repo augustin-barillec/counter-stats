@@ -12,6 +12,7 @@ def build_cols():
             'd',
             'map',
             'map_number',
+            'round_number',
             'kind'
         ]
 

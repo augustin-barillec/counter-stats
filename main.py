@@ -3,6 +3,7 @@ import queries
 from google_pandas_load import LoaderQuickSetup
 from delete_tables import delete_tables
 from pile_up import pile_up
+from  sharpen import sharpen
 from categorize import categorize
 from parse_logs import parse_logs
 from dataframes import build_dataframes
@@ -22,57 +23,67 @@ gpl = LoaderQuickSetup(
     separator='|',
     logger=logger)
 
-logger.info('Starting delete_tables...')
-delete_tables(gpl.bq_client, logger)
-logger.info('Ended delete_tables')
 
-logger.info('Starting pile_up logs...')
-logs = pile_up(logs_folder_path)
-logger.info('Ended pile_up logs')
-
-logger.info('Starting categorize logs...')
-raw_data = categorize(logs)
-logger.info('Ended categorize logs')
-
-logger.info('Starting parse logs...')
-data = parse_logs(raw_data)
-logger.info('Ended parse logs')
-
-logger.info('Starting build dataframes...')
-dfs = build_dataframes(data)
-logger.info('Ended build dataframes')
-
-logger.info('Starting prettify logs...')
-pretty_logs_df = prettify(dfs)
-logger.info('Ended prettigy logs')
-
-logger.info('Starting upload dfs...')
-upload_dfs(gpl, dfs)
-logger.info('Ended upload dfs')
-
-logger.info('Starting upload pretty_logs...')
-upload_pretty_logs(gpl, pretty_logs_df)
-logger.info('Ended upload pretty_logs')
+# logger.info('Starting pile_up logs...')
+# logs = pile_up(logs_folder_path)
+# logger.info('Ended pile_up logs')
+#
+# logger.info('Starting sharpen logs...')
+# logs = sharpen(logs)
+# logger.info('Ended sharpen logs')
+#
+# logger.info('Starting categorize logs...')
+# raw_data = categorize(logs)
+# logger.info('Ended categorize logs')
+#
+# logger.info('Starting parse logs...')
+# data = parse_logs(raw_data)
+# logger.info('Ended parse logs')
+#
+# logger.info('Starting build dataframes...')
+# dfs = build_dataframes(data)
+# logger.info('Ended build dataframes')
+#
+# logger.info('Starting prettify logs...')
+# pretty_logs_df = prettify(dfs)
+# logger.info('Ended prettigy logs')
+#
+# logger.info('Starting delete_tables...')
+# delete_tables(gpl.bq_client, logger)
+# logger.info('Ended delete_tables')
+#
+# logger.info('Starting upload dfs...')
+# upload_dfs(gpl, dfs)
+# logger.info('Ended upload dfs')
+#
+# logger.info('Starting upload pretty_logs...')
+# upload_pretty_logs(gpl, pretty_logs_df)
+# logger.info('Ended upload pretty_logs')
 
 query_to_bq_steps = [
-    'build_hh_kills',
-    'build_h_suicides',
-    'elect_h_player_names',
-    'reattribute_hh_kills',
-    'reattribute_h_suicides',
-    'filter_h_suicides',
-    'build_competition_hh_kills',
-    'build_competition_h_suicides',
-    'build_individiual_stats',
+    # 'build_hh_kills',
+    # 'build_h_suicides',
+    # 'filter_h_suicides',
+    #
+    # 'elect_h_player_names',
+    # 'reattribute_hh_kills',
+    # 'reattribute_h_suicides',
 
-    'build_map_durations',
-    'build_map_outcomes',
-    'build_map_summaries',
-    'select_maps',
-    'build_competition_maps',
-    'build_map_teams',
-    'build_team_stats'
+    # 'compute_tk',
+
+    # 'compute_map_durations',
+    # 'compute_map_outcomes',
+    # 'select_maps',
+
+    # 'compute_competition',
+
+    # 'compute_kd_stats',
+
+    # 'attribute_teams',
+
+    'compute_vd_stats'
 ]
+
 
 for step in query_to_bq_steps:
     logger.info('Starting {}...'.format(step))
