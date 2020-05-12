@@ -83,7 +83,9 @@ query_to_bq_steps = [
     'compute_vd_stats',
 
     'compute_sequences',
-    'add_map_infos_to_sequences'
+    'add_map_infos_to_sequences',
+    'extract_kill_sequences',
+    'extract_killed_sequences'
 ]
 
 

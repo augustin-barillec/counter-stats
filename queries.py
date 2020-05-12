@@ -397,27 +397,11 @@ def compute_sequences(gpl):
     map_number,
     type,
     length,
-    count(*) as nb_of_sequences
+    count(*) as cnt
     from sequences
-    group by player_name, map_number, type, length),
-    
-    kill_sequences as (
-    select * from sequences_1 where type = 1), 
-    
-    killed_sequences as (
-    select * from sequences_1 where type = -1),
-    
-    sequences_2 as (
-    select 
-    player_name, 
-    map_number, 
-    length,
-    ifnull(kill_sequences.nb_of_sequences, 0) as kill_sequences,
-    ifnull(killed_sequences.nb_of_sequences, 0) as killed_sequences
-    from kill_sequences full outer join killed_sequences
-    using (player_name, map_number, length))
-    
-    select * from sequences_2
+    group by player_name, map_number, type, length)
+        
+    select * from sequences_1
     """
     query = format_query(query_template)
     query_to_bq(gpl, query, 'sequences')
@@ -426,11 +410,37 @@ def compute_sequences(gpl):
 def add_map_infos_to_sequences(gpl):
     query_template = """
     with
-    sequences as (select * 
-    from `{project_id}.{dataset_name}.sequences`),
+    sequences as (select * from `{project_id}.{dataset_name}.sequences`),
     maps as (select * from `{project_id}.{dataset_name}.maps`)
-    
+
     select * from sequences inner join maps using(map_number)
     """
     query = format_query(query_template)
     query_to_bq(gpl, query, 'sequences')
+
+
+def extract_typed_sequences(gpl, type_):
+    assert type_ in (-1, 1)
+    query_template = """
+    with
+    sequences as (select * from `{project_id}.{dataset_name}.sequences`)
+    
+    select *except(type) from sequences where type = {type_}
+    """
+    query = query_template.format(
+        project_id=project_id,
+        dataset_name=dataset_name,
+        type_=type_)
+    if type_ == 1:
+        table_name = 'kill_sequences'
+    else:
+        table_name = 'killed_sequences'
+    query_to_bq(gpl, query, table_name)
+
+
+def extract_kill_sequences(gpl):
+    extract_typed_sequences(gpl, 1)
+
+
+def extract_killed_sequences(gpl):
+    extract_typed_sequences(gpl, -1)
