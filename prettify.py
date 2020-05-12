@@ -1,6 +1,7 @@
 import pandas
 from copy import deepcopy
 from kinds import kinds
+from cols import common_cols
 
 
 def pretty_amx_statement(row):
@@ -93,16 +94,7 @@ def prettify(dfs):
             axis=1)
 
     to_concat = []
-    cols = [
-        'rn',
-        'ts',
-        'd',
-        'map',
-        'map_number',
-        'round_number',
-        'kind',
-        'pretty_log'
-    ]
+    cols = [c for c in common_cols if c != 'log'] + ['pretty_log']
 
     for kind in kinds:
         to_concat.append(pretty_logs[kind][cols])

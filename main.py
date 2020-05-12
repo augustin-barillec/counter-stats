@@ -75,6 +75,8 @@ query_to_bq_steps = [
     'compute_map_outcomes',
     'select_maps',
 
+    'select_logs',
+
     'compute_competition',
 
     'compute_kd_stats',

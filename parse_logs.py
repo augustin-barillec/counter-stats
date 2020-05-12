@@ -16,8 +16,10 @@ def parse_logs(raw_data):
 
             ts = log_to_timestamp(log)
             d = ts.date()
+            h = ts.hour
             row['ts'] = ts
             row['d'] = d
+            row['h'] = h
 
             if kind in {
                 'amx_statement',

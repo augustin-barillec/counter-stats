@@ -195,6 +195,20 @@ def select_maps(gpl):
     query_to_bq(gpl, query, 'maps')
 
 
+def select_logs(gpl):
+    query_template = """
+    with 
+    pretty_logs as (select * 
+    from `{project_id}.{dataset_name}.raw_pretty_logs`),
+    maps as (select * from `{project_id}.{dataset_name}.maps`)
+    
+    select * from pretty_logs 
+    where map_number in (select map_number from maps)
+    """
+    query = format_query(query_template)
+    query_to_bq(gpl, query, 'pretty_logs')
+
+
 def build_competition_col():
     competition_col = """
     extract(dayofweek from ts) = 6 

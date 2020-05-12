@@ -1,21 +1,23 @@
 from kinds import kinds
 
+common_cols = [
+    'log',
+    'rn',
+    'ts',
+    'd',
+    'h',
+    'map',
+    'map_number',
+    'round_number',
+    'kind'
+]
+
 
 def build_cols():
     cols = dict()
 
     for kind in kinds:
-        cols[kind] = [
-            'log',
-            'rn',
-            'ts',
-            'd',
-            'map',
-            'map_number',
-            'round_number',
-            'kind'
-        ]
-
+        cols[kind] = common_cols[:]
     for kind in [
         'amx_statement',
         'chat_statement',
