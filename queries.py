@@ -232,7 +232,7 @@ def compute_competition(gpl):
     select *, {competition_col} from `{project_id}.{dataset_name}.{table_name}`
     """
     competition_col = build_competition_col()
-    for table_name in ['hh_kills', 'h_suicides', 'maps']:
+    for table_name in ['hh_kills', 'h_suicides', 'maps', 'pretty_logs']:
         query = query_template.format(
             competition_col=competition_col,
             project_id=project_id,
@@ -251,8 +251,9 @@ def compute_kd_stats(gpl):
 
     kills as (
     select 
-    rn, ts, d, map, map_number, round_number, competition,
+    rn, ts, h, d, map, map_number, round_number, competition,
     killer_name as player_name,
+    killer_team as player_team,
     cast(not tk as int64) as kills,
     cast(tk as int64) as team_kills, 
     0 as killed,
@@ -262,8 +263,9 @@ def compute_kd_stats(gpl):
     
     killed as (
     select 
-    rn, ts, d, map, map_number, round_number, competition,
+    rn, ts, h, d, map, map_number, round_number, competition,
     killed_name as player_name,
+    killed_team as player_team,
     0 as kills,
     0 as team_kills, 
     cast(not tk as int64) as killed,
@@ -273,8 +275,9 @@ def compute_kd_stats(gpl):
     
     suicides as (
     select 
-    rn, ts, d, map, map_number, round_number, competition,
+    rn, ts, h, d, map, map_number, round_number, competition,
     player_name,
+    player_team,
     0 as kills,
     0 as team_kills, 
     0 as killed,
