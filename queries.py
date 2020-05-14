@@ -306,7 +306,7 @@ def attribute_teams(gpl):
     killer_name, 
     countif(killer_team='CT') as kills_as_ct, 
     countif(killer_team='T') as kills_as_t
-    from hh_kills
+    from hh_kills where not tk
     group by killer_name, map_number),
 
     nb_of_killed as (select 
@@ -314,7 +314,7 @@ def attribute_teams(gpl):
     killed_name, 
     countif(killed_team='CT') as killed_as_ct, 
     countif(killed_team='T') as killed_as_t
-    from hh_kills
+    from hh_kills where not tk
     group by killed_name, map_number),
 
     stats as (select
@@ -402,29 +402,29 @@ def compute_sequences(gpl):
     over (partition by player_name order by rn) as nb_of_breaks
     from events_1),
     
-    sequences as (
+    first_events as (
     select 
     player_name, 
     type, 
     count(*) as length, 
     min(rn) as rn,
-    min(ts) as ts,		
-    min(d) as d,
-    min(h) as h,
-    min(map) as map,	
+    array_agg(ts order by rn)[offset(0)] as ts,	
+    array_agg(d order by rn)[offset(0)] as d,	
+    array_agg(h order by rn)[offset(0)] as h,	
     min(map_number) as map_number,		
     min(round_number) as round_number,	
-    min(killer_team) as killer_team,		
-    min(killed_team) as killed_team,		
-    min(weapon) as weapon,	
-    min(killer_name) as killer_name,		
-    min(killed_name) as killed_name,		
-    min(competition) as competition
+    array_agg(map order by rn)[offset(0)] as map,
+    array_agg(killer_team order by rn)[offset(0)] as killer_team,		
+    array_agg(killed_team order by rn)[offset(0)] as killed_team,		
+    array_agg(weapon order by rn)[offset(0)] as weapon,	
+    array_agg(killer_name order by rn)[offset(0)] as killer_name,		
+    array_agg(killed_name order by rn)[offset(0)] as killed_name,		
+    array_agg(competition order by rn)[offset(0)] as competition
     from events_2 
     group by player_name, nb_of_breaks, type
     having length >= 3)
             
-    select * from sequences
+    select * from first_events
     """
     query = format_query(query_template)
     query_to_bq(gpl, query, 'sequences')
