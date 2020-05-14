@@ -181,15 +181,14 @@ def select_maps(gpl):
     query_template = """
     with 
     hh_kills as (select * from `{project_id}.{dataset_name}.hh_kills`),
+    h_suicides as (select * from `{project_id}.{dataset_name}.h_suicides`),
     maps as (select * from `{project_id}.{dataset_name}.maps`)
 
     select * from maps
-    where duration > 5 
-    and outcome in ('ct_victory', 't_victory')
-    and greatest(max_ct_score, max_t_score) > 4
-    and max_ct_score <= 15 
-    and max_t_score <= 15
-    and map_number in (select map_number from hh_kills)
+    where 
+    map_number in (select map_number from hh_kills)
+    or 
+    map_number in (select map_number from h_suicides)
     """
     query = format_query(query_template)
     query_to_bq(gpl, query, 'maps')
@@ -359,20 +358,22 @@ def compute_vd_stats(gpl):
     stats as (
     select *
     from team_attributions inner join maps using (map_number)),
-
+    
     stats_1 as (
+    select * from stats where outcome in ('ct_victory', 't_victory')),
+
+    stats_2 as (
     select *, 
     case
-    when player_team = 'T' and outcome = 't_victory' then true
-    when player_team = 'CT' and outcome = 'ct_victory' then true 
+    when player_team = 'CT' and outcome = 'ct_victory' then true
+    when player_team = 'T' and outcome = 't_victory' then true 
     else False end as is_winner
-    from stats)
+    from stats_1)
 
     select *, 
-    1 as games,
     cast(is_winner as int64) as victories,
     cast(not is_winner as int64) as defeats
-    from stats_1
+    from stats_2
     """
     query = format_query(query_template)
     query_to_bq(gpl, query, 'vd_stats')
@@ -382,82 +383,48 @@ def compute_sequences(gpl):
     query_template = """
     with
     hh_kills as (select * from `{project_id}.{dataset_name}.hh_kills`),
-    hh_no_team_kills as (select rn, map_number, killer_name, killed_name 
-    from hh_kills where not tk),
+    hh_no_team_kills as (select * from hh_kills where not tk),
     
-    kills as (select killer_name as player_name, rn, map_number, 1 as type 
+    kills as (select *, killer_name as player_name, 1 as type 
     from hh_no_team_kills),
-    killed as (select killed_name as player_name, rn, map_number, -1 as type 
+    killed as (select *, killed_name as player_name, -1 as type 
     from hh_no_team_kills),
     
     events as (select * from kills union all select * from killed),
     
     events_1 as (select *,
-    type - lag(type) over(partition by player_name, map_number order by rn) 
+    type - lag(type) over(partition by player_name order by rn) 
     as step
     from events),
     
     events_2 as (select *, 
     countif(abs(step) > 1) 
-    over (partition by player_name, map_number order by rn) as nb_of_breaks
+    over (partition by player_name order by rn) as nb_of_breaks
     from events_1),
     
     sequences as (
-    select player_name, map_number, nb_of_breaks, type, count(*) as length 
+    select 
+    player_name, 
+    type, 
+    count(*) as length, 
+    min(rn) as rn,
+    min(ts) as ts,		
+    min(d) as d,
+    min(h) as h,
+    min(map) as map,	
+    min(map_number) as map_number,		
+    min(round_number) as round_number,	
+    min(killer_team) as killer_team,		
+    min(killed_team) as killed_team,		
+    min(weapon) as weapon,	
+    min(killer_name) as killer_name,		
+    min(killed_name) as killed_name,		
+    min(competition) as competition
     from events_2 
-    group by player_name, map_number, nb_of_breaks, type
-    having length >= 3),
-    
-    sequences_1 as (
-    select
-    player_name,
-    map_number,
-    type,
-    length,
-    count(*) as cnt
-    from sequences
-    group by player_name, map_number, type, length)
-        
-    select * from sequences_1
+    group by player_name, nb_of_breaks, type
+    having length >= 3)
+            
+    select * from sequences
     """
     query = format_query(query_template)
     query_to_bq(gpl, query, 'sequences')
-
-
-def add_map_infos_to_sequences(gpl):
-    query_template = """
-    with
-    sequences as (select * from `{project_id}.{dataset_name}.sequences`),
-    maps as (select * from `{project_id}.{dataset_name}.maps`)
-
-    select * from sequences inner join maps using(map_number)
-    """
-    query = format_query(query_template)
-    query_to_bq(gpl, query, 'sequences')
-
-
-def extract_typed_sequences(gpl, type_):
-    assert type_ in (-1, 1)
-    query_template = """
-    with
-    sequences as (select * from `{project_id}.{dataset_name}.sequences`)
-    
-    select *except(type) from sequences where type = {type_}
-    """
-    query = query_template.format(
-        project_id=project_id,
-        dataset_name=dataset_name,
-        type_=type_)
-    if type_ == 1:
-        table_name = 'kill_sequences'
-    else:
-        table_name = 'killed_sequences'
-    query_to_bq(gpl, query, table_name)
-
-
-def extract_kill_sequences(gpl):
-    extract_typed_sequences(gpl, 1)
-
-
-def extract_killed_sequences(gpl):
-    extract_typed_sequences(gpl, -1)
