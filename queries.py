@@ -165,7 +165,10 @@ def compute_map_outcomes(gpl):
     when max_ct_score = max_t_score then 'draw'
     when max_ct_score > max_t_score then 'ct_victory'
     when max_t_score > max_ct_score then 't_victory'
-    end as outcome
+    end as outcome,
+    cast(max_ct_score = max_t_score as int64) as draws,
+    cast(max_ct_score > max_t_score as int64) as ct_victories,
+    cast(max_ct_score < max_t_score as int64) as t_victories
     from team_victories),
     
     maps_1 as (
@@ -412,7 +415,7 @@ def compute_sequences(gpl):
     array_agg(d order by rn)[offset(0)] as d,	
     array_agg(h order by rn)[offset(0)] as h,	
     min(map_number) as map_number,		
-    min(round_number) as round_number,	
+    array_agg(round_number order by rn)[offset(0)] as round_number,	
     array_agg(map order by rn)[offset(0)] as map,
     array_agg(killer_team order by rn)[offset(0)] as killer_team,		
     array_agg(killed_team order by rn)[offset(0)] as killed_team,		
